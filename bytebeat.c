@@ -710,15 +710,19 @@ int main(int argc, char **argv) {
 
     if (jouer) {
         char cmd[256];
-        const char *lecteurs[] = {"aplay -q -f U8 -c 1 -r %d -", "pw-play --format u8 --rate %d --channels 1 -",
-                                  "paplay --raw --format=u8 --rate=%d --channels=1"};
+        /* la fréquence se place entre avant et apres */
+        const struct { const char *avant, *apres; } lecteurs[] = {
+            {"aplay -q -f U8 -c 1 -r ", " -"},
+            {"pw-play --format u8 --channels 1 --rate ", " -"},
+            {"paplay --raw --format=u8 --channels=1 --rate=", ""},
+        };
         FILE *p = NULL;
         for (int k = 0; k < 3 && !p; k++) {
             char nom[32];
-            sscanf(lecteurs[k], "%31s", nom);
+            sscanf(lecteurs[k].avant, "%31s", nom);
             snprintf(cmd, sizeof cmd, "command -v %s >/dev/null 2>&1", nom);
             if (system(cmd) != 0) continue;
-            snprintf(cmd, sizeof cmd, lecteurs[k], taux);
+            snprintf(cmd, sizeof cmd, "%s%d%s", lecteurs[k].avant, taux, lecteurs[k].apres);
             p = popen(cmd, "w");
         }
         if (!p) meurt("aucun lecteur audio trouvé (aplay, pw-play ou paplay)");
